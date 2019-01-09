@@ -1,0 +1,66 @@
+body {
+	font-family: monospace;
+	background-color: black;
+	color: white
+}
+
+.term_fgblack {
+  color: #000000;
+}
+.term_fggrey {
+  color: #404040;
+}
+.term_fgred {
+  color: #c00000;
+}
+.term_fggreen {
+  color: #00c000;
+}
+.term_fgyellow {
+  color: #c0c000;
+}
+.term_fgblue {
+  color: #0000c0;
+}
+.term_fgmagenta {
+  color: #c000c0;
+}
+.term_fgcyan {
+  color: #00c0c0;
+}
+.term_fgwhite {
+  color: #c0c0c0;
+}
+
+.term_bgred {
+  background-color: #c00000;
+}
+.term_bggreen {
+  background-color: #00c000;
+}
+.term_bgyellow {
+  background-color: #c0c000;
+}
+.term_bgblue {
+  background-color: #0000c0;
+}
+.term_bgmagenta {
+  background-color: #c000c0;
+}
+.term_bgcyan {
+  background-color: #00c0c0;
+}
+.term_bgwhite {
+  background-color: #c0c0c0;
+}
+
+#input {
+	font-family: monospace;
+	background-color: black;
+	color: white
+}
+
+#main {
+	overflow: auto;
+	height: 90%;
+}
