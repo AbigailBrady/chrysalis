@@ -4,6 +4,27 @@ body {
 	color: white
 }
 
+.term_ital {
+  font-style: italic
+}
+
+.term_und {
+	text-decoration: underline
+}
+
+.term_over {
+	text-decoration: overline
+}
+
+.term_und2 {
+	text-decoration: underline;
+	text-decoration-style: double;
+}
+
+.term_str {
+	text-decoration: line-through
+}
+
 .term_fgblack {
   color: #000000;
 }
@@ -30,6 +51,56 @@ body {
 }
 .term_fgwhite {
   color: #c0c0c0;
+}
+
+.term_fgblackbold {
+  color: #404040;
+}
+.term_fgredbold {
+  color: #f00000;
+}
+.term_fggreenbold {
+  color: #00f000;
+}
+.term_fgyellowbold {
+  color: #f0f000;
+}
+.term_fgbluebold {
+  color: #0000f0;
+}
+.term_fgmagentabold {
+  color: #f000f0;
+}
+.term_fgcyanbold {
+  color: #00f0f0;
+}
+.term_fgwhitebold {
+  color: #f0f0f0;
+}
+
+.term_fgblackfaint {
+  color: #000000;
+}
+.term_fgredfaint {
+  color: #800000;
+}
+.term_fggreenfaint {
+  color: #008000;
+}
+.term_fgyellowfaint {
+  color: #808000;
+}
+.term_fgbluefaint {
+  color: #000080;
+}
+.term_fgmagentafaint {
+  color: #800080;
+}
+.term_fgcyanfaint {
+  color: #008080;
+}
+.term_fgwhitefaint {
+  color: #808080;
 }
 
 .term_bgred {
