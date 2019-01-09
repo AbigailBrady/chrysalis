@@ -62,7 +62,7 @@
 	  if (subMode == TTYPE && subData.length === 1 && subData[0] === SEND) {
 	        let cmd = [IAC, SB, TTYPE, IS]
 	
-	        const name = "chrysalis";
+	        const name = "chrysalis2";
 
 	        for (let idx = 0; idx < name.length; idx += 1) {
 	             cmd.push(name.charCodeAt(idx))
