@@ -1,66 +1,69 @@
-  let telnetState = 0;
-  let subMode = 0;
-  let subData = [];
+  import {IAC, DONT, DO, WILL, WONT, ECHO, TTYPE, SB, SE, IS, SEND, NOP, TELOPT_NAWS, TELOPT_EOR, EOR } from "./telnetconstants.js";
+ 
+  let socketSend = null;
 
-  const IAC = 255;
-  const DONT = 254;
-  const DO = 253;
-  const WONT = 252;
-  const WILL = 251;
-  const SB = 250
-  const NOP = 241;
-  const SE = 240;
+  export function registerSocketSend(sendFunction) {
+	  socketSend = sendFunction;
+  }
 
-  const ECHO = 1;
-  const TTYPE = 24;
+  function encodeIAC(data) {
+	  const str = [];
+	  data.forEach(ch => { if (ch === IAC) { str.push(IAC); } str.push(data) });
+ 	  return data;
+  }
 
-  const SEND = 1;
-  const IS = 0;
+  function encodeSubNeg(subMode, data) {
+	  
+	  const cmd = [IAC, SB, subMode]
+	  data = encodeIAC(data)
+	  data.forEach(ch => cmd.push(ch))
+	  cmd.push(IAC)
+	  cmd.push(SE)
+	  return cmd
+  }
 
-  function handleNegotiation(state, code, echoHandler, telnetSend) {
+  let currentWidth = 80;
+  
+  function encodeNAWS() {
+	  return encodeSubNeg(TELOPT_NAWS, [0, currentWidth, 0, 30])
+  }
+
+  export function sendSize(width) {
+	  currentWidth = width;
+	  if (socketSend) {
+	  	socketSend(encodeNAWS())
+	  }
+  }
+
+  function handleNegotiation(state, code, echoHandler) {
 
 	 if (state === WILL && code === ECHO) {
-		 telnetSend([IAC, DO, ECHO])
 		 echoHandler(false)
-		 return
+		 return [IAC, DO, ECHO]
 	 }
 	 if (state === WONT && code === ECHO) {
-		 telnetSend([IAC, DONT, ECHO])
 		 echoHandler(true)
-		 return
+		 return [IAC, DONT, ECHO]
 	 }
 	 if (state === DO && code === TTYPE) {
-		 telnetSend([IAC, WILL, TTYPE])
+		 return [IAC, WILL, TTYPE]
+	 }
+	 if (state === DO && code === TELOPT_NAWS) {
+		 const nawsReply = [IAC, WILL, TELOPT_NAWS].concat(encodeNAWS())
+		 console.log(nawsReply)
+		 return nawsReply
+	 }
+	 if (state === WILL && code === TELOPT_EOR) {
+		 return [IAC, DO, TELOPT_EOR]
 	 }
 
 	 console.log("IAC ", state, code)
-
+	  return []
   }
- 
-  export function handleTelnet(data, dataHandler, echoHandler, telnetSend) {
 
-    if (telnetState === 0 && data === IAC) {
-       telnetState = IAC;
-       return;
-    }
-
-    if (telnetState === SB) {
-	subMode = data;
-	subData = []
-	telnetState = 0;
-	return;
-    }
-
-    if (telnetState === IAC) {
-       if (data === WILL || data === WONT || data === DO ||
-           data === DONT || data === SB) {
-          telnetState = data;
-          return;
-       }
-
-       if (data === SE && subMode != 0) {
-	  if (subMode == TTYPE && subData.length === 1 && subData[0] === SEND) {
-	        let cmd = [IAC, SB, TTYPE, IS]
+  function handleSubnegotiation(subMode, subData) {
+	  if (subMode === TTYPE && subData.length === 1 && subData[0] === SEND) {
+	        const cmd = [IAC, SB, TTYPE, IS]
 	
 	        const name = "chrysalis2";
 
@@ -71,26 +74,73 @@
 		cmd.push(IAC)
 		cmd.push(SE)
 
-                telnetSend(cmd)
+                return cmd
 	  }
+
+	  return []
+  }
+  
+  let telnetState = 0;
+  let subMode = 0;
+  let subData = [];
+
+  export function handleTelnet(data, dataHandler, echoHandler) {
+
+    if (telnetState === 0 && data === IAC) {
+       telnetState = IAC;
+       return [];
+    }
+
+    if (telnetState === SB) {
+	subMode = data;
+	subData = []
+	telnetState = 0;
+	return [];
+    }
+
+    if (telnetState === IAC) {
+       if (data === WILL || data === WONT || data === DO ||
+           data === DONT || data === SB) {
+          telnetState = data;
+          return [];
+       }
+
+       if (data === SE && subMode !== 0) {
+	  const cmd = handleSubnegotiation(subMode, subData)
 	  telnetState = 0;
 	  subMode = 0;
-	  return;
+	  return cmd;
        }
 
        if (data === NOP) {
           telnetState = 0;
-          return;
+          return [];
+       }
+       
+       if (data === EOR) {
+          telnetState = 0;
+	  dataHandler();
+          return [];
        }
 
+       if (data === IAC) {
+	       if (subMode) {
+		       subData.push(data)
+		} else {
+		       dataHandler(data)
+		}
+	       telnetState = 0;
+	       return [];
+	}
+
        console.error("unknown byte", data, "in state",  telnetState)
-       return
+       return []
     }
 
     if (telnetState === WILL || telnetState === WONT || telnetState === DO || telnetState === DONT) {
-       handleNegotiation(telnetState, data, echoHandler, telnetSend);
+       const cmd = handleNegotiation(telnetState, data, echoHandler);
        telnetState = 0;
-       return;
+       return cmd;
     }
 
     if (telnetState === 0) {
@@ -102,5 +152,7 @@
     } else {
       console.error("unknown byte", data, "in state",  telnetState)
     }
+
+    return []
   }
 

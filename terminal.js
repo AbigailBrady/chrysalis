@@ -1,4 +1,5 @@
   const output = document.getElementById("output")
+  const prompt = document.getElementById("prompt")
 
   let attr = {
 	  bold: false,
@@ -26,13 +27,13 @@
 		  fg = bg;
 	  }
 	  if (attr.faint) {
-	    str = "term_fg" + fg + "faint";
+	    str = `term_fg${fg}faint`;
 	  } else if (attr.bold) {
-	    str = "term_fg" + fg + "bold";
+	    str = `term_fg${fg}bold`;
 	  } else {
-	    str = "term_fg" + fg;
+	    str = `term_fg${fg}`;
 	  }
-	  str += " term_bg" + bg;
+	  str += ` term_bg${bg}`;
 	  if (attr.ital) {
 		  str += " term_ital"
 	  }
@@ -50,44 +51,64 @@
 	  }
 	  return str;
   }
+  
+  function lineToHTML(line) {
 
-  let lastCls = "";
+     let outLine = "";
+     let lastClass = "";
 
-  let outData = "";
+     line.forEach(arg => {
+
+	     const cls = arg.cls;
+	     if (cls !== lastClass) {
+		     if (outLine.length) {
+			     outLine += "</span>"
+		     }
+		     outLine += `<span class="${cls}">`
+		     lastClass = cls;
+	     }
+
+	     outLine += arg.char;
+     })
+
+     return outLine;
+
+  }
+
+  let outLine = []
 
   function handleChar(data) {
-    const cls = attrToClass(attr);
-
     if (data === 13) {
-      outData += "<br />";
+      output.innerHTML += lineToHTML(outLine)
+      output.innerHTML += "<br />"
+      outLine = []
     } else {
+      const cls = attrToClass(attr);
+
       let char = String.fromCharCode(data)
       if (char === " ") char = "&nbsp;"
       if (char === "<") char = "&lt;"
       if (char === ">") char = "&gt;"
       if (char === "&") char = "&amp;"
 
-      let outHTML = "";
-
-      if (cls !== lastCls) {
-	      outHTML += `</span><span class="${cls}">`
-	      lastCls = cls;
-      }
-      outHTML += char;
-      outData += outHTML;
-
-      output.innerHTML = outData;
+      outLine.push({ cls, char })
     }
   }
 
+  function handlePrompt() {
+     prompt.innerHTML = lineToHTML(outLine)
+     outLine = []
+  }
+
+
   export function appendCommand(command) {
-     outData += command
-     outData += "<br />"
-      
-     output.innerHTML = outData;
+     output.innerHTML += prompt.innerHTML
+     output.innerHTML += command
+     output.innerHTML += "<br />"
+     prompt.innerHTML = "";
   }
   
-  let defattr = Object.assign({}, attr);
+  const defattr = Object.assign({}, attr);
 
   function handleColorCommand(cmd) {
 	  switch (cmd) {
@@ -134,7 +155,7 @@
   {
     if (code === "m" && str[0] === "[") {
       let commands = str.substr(1).split(";")
-	    if (commands.length === 0) { commands = [0] }
+     if (commands.length === 0) { commands = [0] }
       commands.forEach(handleColorCommand)
     }
   }
@@ -149,6 +170,11 @@
   }
 
   export function handleTerminal(data) {
+
+    if (data === undefined) {
+	    handlePrompt()
+	    return;
+    }
 
     const str = String.fromCharCode(data)
 

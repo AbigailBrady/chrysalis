@@ -11,6 +11,7 @@ export const EOR = 239;
 export const ECHO = 1;
 export const TTYPE = 24;
 export const TELOPT_EOR = 25;
+export const TELOPT_NAWS = 31;
 
 export const SEND = 1;
 export const IS = 0;

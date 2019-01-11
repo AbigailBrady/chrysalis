@@ -135,3 +135,7 @@ body {
 	overflow: auto;
 	height: 90%;
 }
+
+#measure {
+	display: hidden;
+}
