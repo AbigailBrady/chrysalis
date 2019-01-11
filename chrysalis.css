@@ -138,4 +138,20 @@ body {
 
 #measure {
 	display: hidden;
+	background-color: black;
+	color: black;
+}
+
+#wide {
+	display: hidden;
+	background-color: black;
+	color: black;
+}
+
+#prompt {
+	float: left;
+}
+
+.cursor {
+	background-color: red;
 }

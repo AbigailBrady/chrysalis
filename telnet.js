@@ -1,10 +1,10 @@
   import {IAC, DONT, DO, WILL, WONT, ECHO, TTYPE, SB, SE, IS, SEND, NOP, TELOPT_NAWS, TELOPT_EOR, EOR } from "./telnetconstants.js";
  
-  let socketSend = null;
+  import {socketSend} from "./socket.js";
 
-  export function registerSocketSend(sendFunction) {
-	  socketSend = sendFunction;
-  }
+  import {handleTerminal} from "./terminal.js"
+
+  import {setEcho} from "./command.js"
 
   function encodeIAC(data) {
 	  const str = [];
@@ -28,37 +28,42 @@
 	  return encodeSubNeg(TELOPT_NAWS, [0, currentWidth, 0, 30])
   }
 
+  let naws = false;
+
   export function sendSize(width) {
 	  currentWidth = width;
-	  if (socketSend) {
-	  	socketSend(encodeNAWS())
+	  if (naws) {
+      	  	socketSend(encodeNAWS())
 	  }
   }
 
-  function handleNegotiation(state, code, echoHandler) {
+  function handleNegotiation(state, code) {
 
 	 if (state === WILL && code === ECHO) {
-		 echoHandler(false)
-		 return [IAC, DO, ECHO]
+		 setEcho(false)
+		 socketSend([IAC, DO, ECHO])
+		 return
 	 }
 	 if (state === WONT && code === ECHO) {
-		 echoHandler(true)
-		 return [IAC, DONT, ECHO]
+		 setEcho(true)
+		 socketSend([IAC, DONT, ECHO])
+		 return
 	 }
 	 if (state === DO && code === TTYPE) {
-		 return [IAC, WILL, TTYPE]
+		 socketSend([IAC, WILL, TTYPE])
+		 return
 	 }
 	 if (state === DO && code === TELOPT_NAWS) {
-		 const nawsReply = [IAC, WILL, TELOPT_NAWS].concat(encodeNAWS())
-		 console.log(nawsReply)
-		 return nawsReply
+		 naws = true;
+		 socketSend([IAC, WILL, TELOPT_NAWS].concat(encodeNAWS()))
+		 return
 	 }
 	 if (state === WILL && code === TELOPT_EOR) {
-		 return [IAC, DO, TELOPT_EOR]
+		 socketSend([IAC, DO, TELOPT_EOR])
+		 return
 	 }
 
 	 console.log("IAC ", state, code)
-	  return []
   }
 
   function handleSubnegotiation(subMode, subData) {
@@ -84,75 +89,74 @@
   let subMode = 0;
   let subData = [];
 
-  export function handleTelnet(data, dataHandler, echoHandler) {
+  export function handleTelnet(data) {
 
     if (telnetState === 0 && data === IAC) {
-       telnetState = IAC;
-       return [];
+       telnetState = IAC;	
+       return;
     }
 
     if (telnetState === SB) {
 	subMode = data;
 	subData = []
 	telnetState = 0;
-	return [];
+    	return;
     }
 
     if (telnetState === IAC) {
        if (data === WILL || data === WONT || data === DO ||
            data === DONT || data === SB) {
           telnetState = data;
-          return [];
+          return	       
        }
 
        if (data === SE && subMode !== 0) {
-	  const cmd = handleSubnegotiation(subMode, subData)
+	  socketSend(handleSubnegotiation(subMode, subData))
 	  telnetState = 0;
 	  subMode = 0;
-	  return cmd;
+          return;	  
        }
 
        if (data === NOP) {
           telnetState = 0;
-          return [];
+          return;
        }
        
        if (data === EOR) {
           telnetState = 0;
-	  dataHandler();
-          return [];
+	  handleTerminal();
+	  return;
        }
 
        if (data === IAC) {
 	       if (subMode) {
 		       subData.push(data)
 		} else {
-		       dataHandler(data)
+		       handleTerminal(data)
 		}
 	       telnetState = 0;
-	       return [];
-	}
+		return;	
+       }
 
        console.error("unknown byte", data, "in state",  telnetState)
-       return []
+       return;
     }
 
     if (telnetState === WILL || telnetState === WONT || telnetState === DO || telnetState === DONT) {
-       const cmd = handleNegotiation(telnetState, data, echoHandler);
+       handleNegotiation(telnetState, data)
        telnetState = 0;
-       return cmd;
+       return;
     }
 
     if (telnetState === 0) {
 	if (subMode) {
 	    subData.push(data)
 	} else {
-  	    dataHandler(data)
+  	    handleTerminal(data)
 	}
     } else {
       console.error("unknown byte", data, "in state",  telnetState)
     }
 
-    return []
   }
 

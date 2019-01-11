@@ -1,3 +1,5 @@
+import { htmlescape } from "./utils.js" 
+
   const output = document.getElementById("output")
   const prompt = document.getElementById("prompt")
 
@@ -103,7 +105,7 @@
 
   export function appendCommand(command) {
      output.innerHTML += prompt.innerHTML
-     output.innerHTML += command
+     output.innerHTML += htmlescape(command)
      output.innerHTML += "<br />"
      prompt.innerHTML = "";
   }

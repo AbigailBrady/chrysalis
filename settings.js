@@ -1,2 +1,2 @@
-export const url = "ws://127.0.0.1:8081"
+export const url = "ws://192.168.0.31:8080"
 
