@@ -76,7 +76,7 @@ function lineToHTML(line) {
       if (outLine.length) {
         outLine += "</span>";
       }
-      const myattr = "";
+      let myattr = "";
       if (cls.class) {
         myattr += `class="${cls.class} "`;
       }
