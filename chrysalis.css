@@ -28,54 +28,51 @@ body {
 .term_fgblack {
   color: #000000;
 }
-.term_fggrey {
-  color: #404040;
-}
 .term_fgred {
-  color: #c00000;
+  color: #cd0000;
 }
 .term_fggreen {
-  color: #00c000;
+  color: #00cd00;
 }
 .term_fgyellow {
-  color: #c0c000;
+  color: #cdcd00;
 }
 .term_fgblue {
-  color: #0000c0;
+  color: #0000ee;
 }
 .term_fgmagenta {
-  color: #c000c0;
+  color: #cd00cd;
 }
 .term_fgcyan {
-  color: #00c0c0;
+  color: #00cdcd;
 }
 .term_fgwhite {
-  color: #c0c0c0;
+  color: #e5e5e5;
 }
 
-.term_fgblackbold {
-  color: #404040;
+.term_fggrey, .term_fgblackbold {
+  color: #7f7f7f;
 }
 .term_fgredbold {
-  color: #f00000;
+  color: #ff0000;
 }
 .term_fggreenbold {
-  color: #00f000;
+  color: #00ff00;
 }
 .term_fgyellowbold {
-  color: #f0f000;
+  color: #ffff00;
 }
 .term_fgbluebold {
-  color: #0000f0;
+  color: #5c5cff;
 }
 .term_fgmagentabold {
-  color: #f000f0;
+  color: #ff00ff;
 }
 .term_fgcyanbold {
-  color: #00f0f0;
+  color: #00ffff;
 }
 .term_fgwhitebold {
-  color: #f0f0f0;
+  color: #ffffff;
 }
 
 .term_fgblackfaint {

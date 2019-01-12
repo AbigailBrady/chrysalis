@@ -17,8 +17,9 @@ import { htmlescape } from "./utils.js"
 	  hide: false,
   }
 
-  function attrToClass(myattr) {
+  function attrToClassAndStyle(myattr) {
 	  let str = "";
+	  let style = "";
 	  let fg = myattr.fgcol;
 	  let bg = myattr.bgcol;
 	  if (myattr.inv) {
@@ -28,14 +29,25 @@ import { htmlescape } from "./utils.js"
 	  if (myattr.hide) {
 		  fg = bg;
 	  }
-	  if (attr.faint) {
-	    str = `term_fg${fg}faint`;
-	  } else if (attr.bold) {
-	    str = `term_fg${fg}bold`;
+
+	  if (fg[0] === "#") {
+		  style = "color:"
+		  style += attr.fgcol
 	  } else {
-	    str = `term_fg${fg}`;
+		  if (attr.faint) {
+		    str = `term_fg${fg}faint`;
+		  } else if (attr.bold) {
+		    str = `term_fg${fg}bold`;
+		  } else {
+		    str = `term_fg${fg}`;
+		  }
 	  }
-	  str += ` term_bg${bg}`;
+	  if (bg[0] === "#") {
+		  style = "background-color:"
+		  style += bg
+	  } else {
+		  str += ` term_bg${bg}`;
+	  }
 	  if (attr.ital) {
 		  str += " term_ital"
 	  }
@@ -51,26 +63,33 @@ import { htmlescape } from "./utils.js"
 	  if (attr.str) {
 		  str += " term_str"
 	  }
-	  return str;
+	  return { class : str, style };
   }
   
   function lineToHTML(line) {
 
      let outLine = "";
-     let lastClass = "";
+     let lastClass = { }
 
      line.forEach(arg => {
 
 	     const cls = arg.cls;
-	     if (cls !== lastClass) {
+	     if (cls.class !== lastClass.class || cls.style !== lastClass.style) {
 		     if (outLine.length) {
 			     outLine += "</span>"
 		     }
-		     outLine += `<span class="${cls}">`
+		     let attr = "";
+		     if (cls.class) {
+			     attr += `class="${cls.class} "`
+		     }
+		     if (cls.style) {
+			     attr += `style="${cls.style} "`
+		     }
+		     outLine += `<span ${attr}>`
 		     lastClass = cls;
 	     }
 
-	     outLine += arg.char;
+	     outLine += arg.data;
      })
 
      return outLine;
@@ -78,22 +97,30 @@ import { htmlescape } from "./utils.js"
   }
 
   let outLine = []
+  let cr = false;
 
   function handleChar(data) {
-    if (data === 13) {
+    if (data === "\r") {
+       cr = true;
+    } else if (data === "\n") {
       output.innerHTML += lineToHTML(outLine)
       output.innerHTML += "<br />"
       outLine = []
+	    cr = false;
     } else {
-      const cls = attrToClass(attr);
+	if (cr) {
+		outLine = []
+		cr = false
+	}
 
-      let char = String.fromCharCode(data)
-      if (char === " ") char = "&nbsp;"
-      if (char === "<") char = "&lt;"
-      if (char === ">") char = "&gt;"
-      if (char === "&") char = "&amp;"
+      const cls = attrToClassAndStyle(attr);
 
-      outLine.push({ cls, char })
+      if (data === " ") data = "&nbsp;"
+      if (data === "<") data = "&lt;"
+      if (data === ">") data = "&gt;"
+      if (data === "&") data = "&amp;"
+
+      outLine.push({ cls, data })
     }
   }
 
@@ -103,16 +130,51 @@ import { htmlescape } from "./utils.js"
   }
 
 
-  export function appendCommand(command) {
-     output.innerHTML += prompt.innerHTML
-     output.innerHTML += htmlescape(command)
-     output.innerHTML += "<br />"
+  export function appendCommand(command, echo) {
+     if (echo) {
+	     output.innerHTML += prompt.innerHTML
+	     output.innerHTML += htmlescape(command)
+	     output.innerHTML += "<br />"
+     }
      prompt.innerHTML = "";
   }
-  
+ 
+  function get256(code) {
+
+   	  if (code < 16) {
+		  const colors = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
+			          "grey", "redbold", "greenbold", "yellowbold", "bluebold", "magentabold", "cyanbold", "whitebold" ]
+		  return colors[code]
+		}
+
+	  const intensities = ["00", "5f", "87", "af", "d7", "ff"] // per xterm
+
+	  code = parseInt(code)
+	  if (code >= 16 && code < 232) {
+		  code -= 16;
+		  const b = (code % 6);
+		  const g = Math.floor(code / 6) % 6;
+		  const r = Math.floor(code / 36) % 6;
+		  return "#".concat(intensities[r]).concat(intensities[g]).concat(intensities[b])
+	  }
+	  if (code >= 233 && code < 256) {
+		  const greyCodes = ["08", "12", "1C", "26", "30", "3A", "44", "4E", "58", "62", "6c", "76", "80", "8a", "94", "9e", "a8", "b2", "bc", "c6", "d0", "da", "e4", "ee"] // per xterm again
+
+		  code -= 233
+
+		  code = greyCodes[code]
+
+		  return "#".concat(code).concat(code).concat(code)
+		}
+
+	  return "#f8f"
+  }
+
   const defattr = Object.assign({}, attr);
 
-  function handleColorCommand(cmd) {
+  function handleColorCommand(commands) {
+      for (let idx = 0; idx < commands.length; idx++) {
+	  let cmd = commands[idx];
 	  switch (cmd) {
 		  case "": case "0": attr = Object.assign({}, defattr); break 
 		case "1": attr.bold = true; break;
@@ -137,6 +199,7 @@ import { htmlescape } from "./utils.js"
 		case "35": attr.fgcol = "magenta";  break;
 		case "36": attr.fgcol = "cyan";  break;
 		case "37": attr.fgcol = "white"; break;
+		case "38": attr.fgcol = get256(commands[idx+2]); idx += 2; break;
 		case "39": attr.fgcol = "white"; break;
 		case "40": attr.bgcol = "black";  break;
 		case "41": attr.bgcol = "red";  break;
@@ -146,11 +209,13 @@ import { htmlescape } from "./utils.js"
 		case "45": attr.bgcol = "magenta";  break;
 		case "46": attr.bgcol = "cyan";  break;
 		case "47": attr.bgcol = "white"; break;
+		case "48": attr.bgcol = get256(commands[idx+2]); idx += 2; break;
 		case "49": attr.bgcol = "black"; break;
 		case "53": attr.over = true; break;
 		case "55": attr.over = false; break;
 		  default: console.log("unknown ANSI code", cmd)
 		}
+      }
   }
 
   function handleEscape(str, code)
@@ -158,35 +223,34 @@ import { htmlescape } from "./utils.js"
     if (code === "m" && str[0] === "[") {
       let commands = str.substr(1).split(";")
      if (commands.length === 0) { commands = [0] }
-      commands.forEach(handleColorCommand)
+      handleColorCommand(commands)
     }
   }
 
   let esc = false;
   let escStr = "";
  
-  const ESC = 27;  
+  const ESC = "\x1B";  
+  const CSI = "\x9B";
 
   function isLetter(str) {
     return str.length === 1 && str.match(/[a-z]/i);
   }
 
-  export function handleTerminal(data) {
+  export function handleUnicode(data) {
 
     if (data === undefined) {
 	    handlePrompt()
 	    return;
     }
 
-    const str = String.fromCharCode(data)
-
     if (esc) {
-        if (isLetter(str)) {
-	   handleEscape(escStr, str)
+        if (isLetter(data)) {
+	   handleEscape(escStr, data)
            esc = false;
 	   escStr = "";
         }
-        escStr += str;
+        escStr += data;
         return;
     }
 
@@ -196,6 +260,32 @@ import { htmlescape } from "./utils.js"
        return;
     }
 
+    if (data === CSI) {
+	    esc = true;
+	    escStr = "[";
+	    return;
+    }
+
     handleChar(data);
+  }
+
+  let utf8fragment = []
+
+  export function handleTerminal(data) {
+	  if (data === undefined) {
+		  handleUnicode(undefined)
+		  return
+	  }
+	  if (data >= 0 && data <= 0x7f) {
+		  handleUnicode(String.fromCharCode(data))
+		  return
+	  }
+	  utf8fragment.push(data)
+	  try {
+	  	let decoded = utf8.decode(utf8fragment)
+		utf8fragment = []
+		handleUnicode(decoded)
+	  } catch (err) {
+	  }
   }
 

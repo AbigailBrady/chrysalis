@@ -55,13 +55,13 @@ export function setEcho(yes)
 function doHistoryPrev()
 {
   if (editcommandpos == null) {
-    futurecommand = editline
+    futurecommand = edittext
     editcommandpos = editcommands.length
   }
   if (editcommandpos > 0) {
     editcommandpos--;
-    editline = editcommands[editcommandpos];
-    editpos = editline.length;
+    edittext = editcommands[editcommandpos];
+    editpos = edittext.length;
   }
   return true
 }
@@ -70,13 +70,13 @@ function doHistoryNext()
 {
   if (editcommandpos != null && editcommandpos < editcommands.length) {
     editcommandpos++;
-    if (editcommandpos == editcommands.length) {
-      editline = futurecommand;
+    if (editcommandpos === editcommands.length) {
+      edittext = futurecommand;
       editcommandpos = null;
     } else {
-      editline = editcommands[editcommandpos];
+      edittext = editcommands[editcommandpos];
     }
-    editpos = editline.length;
+    editpos = edittext.length;
   }
   return true
 }
@@ -84,10 +84,10 @@ function doHistoryNext()
 function doEnter()
 {
   sendCommand(edittext)
+  appendCommand(edittext, !editpassword)
   if (!editpassword) {
-  	appendCommand(edittext)
+    editcommands.push(edittext)
   }
-  editcommands.push(edittext)
   edittext = "";
   editpos = 0;
   editcommandpos = null;
@@ -117,9 +117,16 @@ export function keyDown(event) {
 		}
 	} else if (event.key === "ArrowUp") {
 		doHistoryPrev();
+	} else if (event.key === "ArrowDown") {
+		doHistoryNext();
 	} else if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
 		edittext = edittext.substr(0, editpos) + event.key + edittext.substr(editpos)
 		editpos += 1;
+	} else if ((event.key === "c" && event.ctrlKey)) {
+		editpos = 0;
+		edittext = "";
+	} else if ((event.key === "k" && event.ctrlKey)) {
+		edittext = edittext(0, editpos)
 	} else if (event.key === "Home" || (event.key === "a" && event.ctrlKey)) {
 		editpos = 0;
 	} else if (event.key === "End" || (event.key === "e" && event.ctrlKey)) {
