@@ -1,18 +1,17 @@
-import { url } from "./settings.js"
+import { url } from "./settings.js";
 
-const ws = new WebSocket(url)
+const ws = new WebSocket(url);
 if (ws) {
-	ws.binaryType = "arraybuffer";
+  ws.binaryType = "arraybuffer";
 }
 
 export function socketSend(arr) {
   if (arr.length === 0) {
-	  return;
+    return;
   }
-  ws.send(new Uint8Array(arr))
+  ws.send(new Uint8Array(arr));
 }
 
 export function getSocket() {
-	return ws;
+  return ws;
 }
-
